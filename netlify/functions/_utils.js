@@ -1,65 +1,44 @@
-// Funciones compartidas por signup.js, login.js y data.js
-// (el prefijo "_" hace que Netlify NO despliegue este archivo como endpoint propio)
-const crypto = require('crypto');
+const { getStore } = require('@netlify/blobs');
+const { json, hashPassword, genToken, safeHandler } = require('./_utils');
 
-function json(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    },
-    body: JSON.stringify(body),
-  };
-}
+exports.handler = safeHandler(async (event) => {
+  if (event.httpMethod === 'OPTIONS') return json(200, {});
+  if (event.httpMethod !== 'POST') return json(405, { error: 'Método no permitido.' });
 
-// Contraseñas: nunca se guardan en texto plano.
-// scrypt (nativo de Node, sin dependencias externas) + salt aleatorio por usuario.
-function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
-  return `${salt}:${hash}`;
-}
-
-function verifyPassword(password, stored) {
+  let body;
   try {
-    const [salt, hash] = String(stored).split(':');
-    const check = crypto.scryptSync(password, salt, 64).toString('hex');
-    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(check, 'hex'));
+    body = JSON.parse(event.body || '{}');
   } catch (e) {
-    return false;
+    return json(400, { error: 'Solicitud inválida.' });
   }
-}
 
-function genToken() {
-  return crypto.randomBytes(32).toString('hex');
-}
+  const correo = String(body.correo || '').trim().toLowerCase();
+  const password = String(body.password || '');
+  const nombre = String(body.nombre || '').trim();
 
-// Envuelve un handler para que, si algo revienta sin control (por ejemplo un
-// problema al conectar con Netlify Blobs), el usuario vea un mensaje de error
-// real en vez del genérico "No se pudo completar la operación".
-function safeHandler(fn) {
-  return async (event, context) => {
-    try {
-      return await fn(event, context);
-    } catch (err) {
-      console.error('Error interno en función:', err);
-      return json(500, { error: 'Error interno del servidor: ' + (err && err.message ? err.message : String(err)) });
-    }
+  if (!correo || !password) return json(400, { error: 'Completa correo y contraseña.' });
+  if (password.length < 4) return json(400, { error: 'La contraseña debe tener al menos 4 caracteres.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return json(400, { error: 'Ingresa un correo válido.' });
+
+  const users = getStore('users');
+  const existing = await users.get(correo, { type: 'json' });
+  if (existing) return json(409, { error: 'Ya existe una cuenta con ese correo.' });
+
+  const user = {
+    correo,
+    nombre,
+    passwordHash: hashPassword(password),
+    createdAt: new Date().toISOString(),
   };
-}
+  await users.setJSON(correo, user);
 
-// El token puede llegar por header Authorization (fetch normal)
-// o por query string (sendBeacon, que no puede mandar headers custom).
-function getTokenFromEvent(event) {
-  const auth = event.headers.authorization || event.headers.Authorization;
-  if (auth && auth.startsWith('Bearer ')) return auth.slice(7);
-  if (event.queryStringParameters && event.queryStringParameters.token) {
-    return event.queryStringParameters.token;
-  }
-  return null;
-}
+  // Cada usuario arranca con su propio estado vacío: total aislamiento entre cuentas.
+  const states = getStore('states');
+  await states.setJSON(correo, {});
 
-module.exports = { json, hashPassword, verifyPassword, genToken, getTokenFromEvent, safeHandler };
+  const token = genToken();
+  const tokens = getStore('tokens');
+  await tokens.set(token, correo);
+
+  return json(200, { token, perfil: { correo: user.correo, nombre: user.nombre } });
+});
