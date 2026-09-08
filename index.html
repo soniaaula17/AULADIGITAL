@@ -7330,13 +7330,14 @@ async function submitAuth(){
     authToken = data.token; authEmail = correo;
     localStorage.setItem('aulaDigital_token', authToken);
     localStorage.setItem('aulaDigital_email', authEmail);
+    await bootAfterAuth(); // limpia los datos de muestra y carga lo que haya guardado en la nube
     if(authMode==='signup' && data.perfil){
       const partes = String(data.perfil.nombre||'').trim().split(/\s+/).filter(Boolean);
       perfil.nombre = partes.shift() || '';
       perfil.apellido = partes.join(' ');
       perfil.correo = data.perfil.correo;
+      renderAll();
     }
-    await bootAfterAuth();
   }catch(e){
     showAuthError(e.message.includes('fetch') ? 'No se pudo conectar con el servidor. ¿La página está desplegada en Netlify?' : e.message);
   }finally{
@@ -7344,8 +7345,33 @@ async function submitAuth(){
     btn.textContent = authMode==='signup' ? 'Crear cuenta' : 'Iniciar sesión';
   }
 }
+/* Borra los datos de muestra (perfil "Sonia Beltre", curso demo, docentes
+   de ejemplo, etc.) que trae el código por defecto, para que tanto el modo
+   "Usar sin cuenta" como una cuenta recién creada arranquen en blanco. */
+function resetToBlankState(){
+  perfil.nombre = ''; perfil.apellido = ''; perfil.correo = authEmail || '';
+  perfil.centro = ''; perfil.area = ''; perfil.rol = 'Docente';
+  perfil.claveAsistencia = '1234'; perfil.logo = '';
+  courses = [];
+  students = []; nextStudentId = 1;
+  plannings = []; instruments = []; mySequences = [];
+  grades = {};
+  calRegistro = {}; calGrades = {}; calCompetenciasHidden = false; calPublicacionHidden = false;
+  attendance = {}; attendanceSaved = {}; attendancePublished = {};
+  adecuaciones = []; recoveryPlans = []; ajustesIndividualizados = [];
+  alfabetizacionInicial = []; experienciasDirectas = []; acompanantesRegistro = [];
+  anecdotal = [];
+  scheduleSlots = []; scheduleEntries = []; scheduleExtraDays = []; scheduleInfo = { periodo:'' };
+  boletinCentroInfo = {}; boletinNotas = {}; boletinObservaciones = {};
+  agendaItems = [];
+  resources = [];
+  docentesPendientes = []; docentesAprobados = [];
+  permisosCentro = { publicar:"Docente", reabrir:"Dirección" };
+  aulaGlobal = 'todas';
+}
 function skipAuth(){
   authToken = null; authEmail = null;
+  resetToBlankState();
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('appRoot').style.display = '';
   renderAll();
@@ -7459,7 +7485,8 @@ window.addEventListener('beforeunload', ()=>{
 async function bootAfterAuth(){
   document.getElementById('authScreen').style.display = 'none';
   document.getElementById('appRoot').style.display = '';
-  await loadRemoteState();
+  resetToBlankState();
+  await loadRemoteState(); // si ya hay datos guardados en la nube, sobrescriben el estado en blanco
   renderAll();
 }
 
