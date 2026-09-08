@@ -37,6 +37,20 @@ function genToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+// Envuelve un handler para que, si algo revienta sin control (por ejemplo un
+// problema al conectar con Netlify Blobs), el usuario vea un mensaje de error
+// real en vez del genérico "No se pudo completar la operación".
+function safeHandler(fn) {
+  return async (event, context) => {
+    try {
+      return await fn(event, context);
+    } catch (err) {
+      console.error('Error interno en función:', err);
+      return json(500, { error: 'Error interno del servidor: ' + (err && err.message ? err.message : String(err)) });
+    }
+  };
+}
+
 // El token puede llegar por header Authorization (fetch normal)
 // o por query string (sendBeacon, que no puede mandar headers custom).
 function getTokenFromEvent(event) {
@@ -48,4 +62,4 @@ function getTokenFromEvent(event) {
   return null;
 }
 
-module.exports = { json, hashPassword, verifyPassword, genToken, getTokenFromEvent };
+module.exports = { json, hashPassword, verifyPassword, genToken, getTokenFromEvent, safeHandler };
