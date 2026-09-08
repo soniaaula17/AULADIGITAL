@@ -1,7 +1,7 @@
 const { getStore } = require('@netlify/blobs');
-const { json, getTokenFromEvent } = require('./_utils');
+const { json, getTokenFromEvent, safeHandler } = require('./_utils');
 
-exports.handler = async (event) => {
+exports.handler = safeHandler(async (event) => {
   if (event.httpMethod === 'OPTIONS') return json(200, {});
 
   const token = getTokenFromEvent(event);
@@ -30,4 +30,4 @@ exports.handler = async (event) => {
   }
 
   return json(405, { error: 'Método no permitido.' });
-};
+});
