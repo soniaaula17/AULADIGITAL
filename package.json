@@ -1,0 +1,9 @@
+{
+  "name": "auladigital",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AulaDigital - app para docentes, con cuentas individuales guardadas en la nube",
+  "dependencies": {
+    "@netlify/blobs": "^11.0.3"
+  }
+}
