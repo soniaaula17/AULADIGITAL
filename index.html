@@ -12,6 +12,13 @@
   }
   *{box-sizing:border-box;}
   body{margin:0; font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif; background:var(--bg); color:var(--text);}
+  /* Tamaño de letra ajustable (accesibilidad): usamos "zoom" en vez de
+     cambiar cada font-size individual (el sistema usa px fijos en casi
+     todas las reglas), así todo escala en conjunto -letras, botones,
+     espaciados- de forma consistente. Soportado en navegadores Chromium
+     y en Firefox reciente. */
+  #appRoot.font-md{zoom:1.12;}
+  #appRoot.font-lg{zoom:1.25;}
   .layout{display:flex; min-height:100vh;}
 
   .sidebar{width:230px; flex-shrink:0; background:linear-gradient(180deg,var(--navy-1),var(--navy-2)); color:#dce6f5; padding:18px 0 24px; display:flex; flex-direction:column;}
@@ -173,6 +180,12 @@
   .dia-progress.ok{color:var(--green);}
   .dia-list{border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#fff;}
   .dia-row{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:10px 16px; border-bottom:1px solid var(--border);}
+  .dia-row.focused{background:var(--blue-light); box-shadow:inset 3px 0 0 var(--blue);}
+  #diaListWrap{outline:none;}
+  /* Fila resaltada momentáneamente cuando se llega a un estudiante desde el
+     buscador global, para que sea fácil ubicarlo dentro de la tabla. */
+  tr.student-row-highlight{animation:student-row-flash 2.2s ease-out;}
+  @keyframes student-row-flash{ 0%,35%{background:#fff6d8;} 100%{background:transparent;} }
   .dia-row:last-child{border-bottom:none;}
   .dia-row:nth-child(even){background:#fafbfc;}
   .dia-num{width:24px; color:var(--muted); font-size:12px; font-weight:700; flex-shrink:0;}
@@ -512,6 +525,21 @@
   .topbar-burger{border:none; background:none; font-size:18px; cursor:pointer; color:var(--text); padding:4px 6px; border-radius:6px;}
   .topbar-burger:hover{background:#f1f4f8;}
   .topbar-right{display:flex; align-items:center; gap:12px;}
+  /* Buscador global de estudiante en la barra superior: encuentra al
+     estudiante por nombre sin importar en qué centro/grado/sección esté,
+     y lo abre directo en su ficha (Estudiantes). */
+  .topbar-search{position:relative; flex:1; max-width:360px; margin:0 16px;}
+  .topbar-search input{width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:12.5px; font-family:inherit; color:var(--text); background:var(--bg);}
+  .topbar-search input:focus{outline:none; border-color:var(--blue); background:#fff;}
+  .topbar-search-results{display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; background:#fff; border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); max-height:320px; overflow-y:auto; z-index:60;}
+  .topbar-search-results.show{display:block;}
+  .topbar-search-result{padding:9px 12px; font-size:12.5px; cursor:pointer; border-bottom:1px solid var(--border);}
+  .topbar-search-result:last-child{border-bottom:none;}
+  .topbar-search-result:hover, .topbar-search-result.active{background:var(--blue-light);}
+  .topbar-search-result .tsr-name{font-weight:600; color:var(--text);}
+  .topbar-search-result .tsr-meta{color:var(--muted); font-size:11.5px;}
+  .topbar-search-empty{padding:12px; font-size:12px; color:var(--muted); text-align:center;}
+  @media (max-width:900px){ .topbar-search{display:none;} }
   .topbar-year{display:flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:12.5px; color:var(--text); background:#fff;}
   .topbar-year b{font-weight:700;}
   .topbar-avatar{width:30px;height:30px;border-radius:50%; background:var(--blue-light); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer; border:none;}
@@ -544,7 +572,13 @@
   .auth-btn{width:100%; padding:11px 0; border-radius:8px; border:none; background:var(--blue); color:#fff; font-weight:700; font-size:13.5px; cursor:pointer;}
   .auth-btn:disabled{opacity:.6; cursor:default;}
   .auth-skip{text-align:center; margin-top:14px; font-size:11.5px; color:var(--muted); cursor:pointer; text-decoration:underline;}
-  .auth-save-badge{position:fixed; bottom:14px; right:18px; background:#fff; border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:11.5px; color:var(--muted); box-shadow:0 4px 14px rgba(0,0,0,.08); z-index:900; display:none;}
+  .auth-save-badge{position:fixed; bottom:14px; right:18px; background:#fff; border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:11.5px; color:var(--muted); box-shadow:0 4px 14px rgba(0,0,0,.08); z-index:900; display:none; display:flex; align-items:center; gap:6px;}
+  .auth-save-badge .dot{width:7px;height:7px;border-radius:50%; background:var(--muted); flex-shrink:0;}
+  .auth-save-badge.ok .dot{background:var(--green);}
+  .auth-save-badge.saving .dot{background:var(--amber); animation:pulse-dot 1s infinite;}
+  .auth-save-badge.error{color:var(--red); border-color:#f3c9c6; background:#fff5f5;}
+  .auth-save-badge.error .dot{background:var(--red);}
+  @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:.3;}}
 
   /* ---- Impresión: al imprimir solo debe verse el contenido de la página
      actual (p.ej. el horario), nunca el menú, las pestañas ni los botones. ---- */
@@ -674,7 +708,7 @@
     <div class="auth-skip" onclick="skipAuth()">Usar sin cuenta (no se guarda en la nube)</div>
   </div>
 </div>
-<div class="auth-save-badge" id="saveBadge">Guardando…</div>
+<div class="auth-save-badge" id="saveBadge"><span class="dot"></span><span id="saveBadgeText">Guardando…</span></div>
 
 <div class="layout" id="appRoot" style="display:none;">
   <aside class="sidebar">
@@ -695,8 +729,14 @@
   <div class="main">
     <div class="topbar">
       <button class="topbar-burger" onclick="toggleSidebar()" title="Mostrar/ocultar menú">☰</button>
+      <div class="topbar-search" id="topbarSearchWrap">
+        <input type="text" id="topbarSearchInput" placeholder="🔎 Buscar estudiante por nombre…" autocomplete="off"
+               oninput="onTopbarSearchInput(this.value)" onkeydown="onTopbarSearchKeydown(event)" onfocus="onTopbarSearchInput(this.value)">
+        <div class="topbar-search-results" id="topbarSearchResults"></div>
+      </div>
       <div class="topbar-right">
         <div class="topbar-year">📅 Año escolar <b id="topbarYear">2026-2027</b></div>
+        <button class="topbar-avatar" onclick="cycleFontSize()" title="Tamaño de letra">🔤</button>
         <button class="topbar-avatar" onclick="goPage('perfil')" title="Mi perfil">👤</button>
       </div>
     </div>
@@ -1066,6 +1106,76 @@ students.forEach(s=>{
    por un código de seguridad) y borrador del modal de alta masiva. */
 let estudiantesSubTab = 'generales';
 let estudiantesEditMode = false;
+
+/* ---- Buscador global de estudiante (barra superior) ---- */
+let pendingHighlightStudentId = null;
+let topbarSearchActiveIdx = -1;
+let topbarSearchLastResults = [];
+function onTopbarSearchInput(query){
+  const box = document.getElementById('topbarSearchResults');
+  const q = (query||'').trim().toLowerCase();
+  topbarSearchActiveIdx = -1;
+  if(q.length < 2){ box.classList.remove('show'); box.innerHTML=''; return; }
+  const matches = students.filter(s=>{
+    const full = (s.name || `${s.nombres||''} ${s.apellidos||''}`).toLowerCase();
+    return full.includes(q);
+  }).slice(0, 8);
+  topbarSearchLastResults = matches;
+  if(matches.length===0){
+    box.innerHTML = `<div class="topbar-search-empty">Sin resultados para "${escapeHtml(query)}"</div>`;
+  } else {
+    box.innerHTML = matches.map((s,i)=>{
+      const fullName = s.name || `${s.nombres||''} ${s.apellidos||''}`.trim();
+      const meta = `${s.grado||''} ${s.seccion||''}${s.centro && s.centro!=='—' ? ' · '+s.centro : ''}`;
+      return `<div class="topbar-search-result" data-idx="${i}" onclick="goToStudentFromSearch(${s.id})">
+        <div class="tsr-name">${escapeHtml(fullName)}</div>
+        <div class="tsr-meta">${escapeHtml(meta)}</div>
+      </div>`;
+    }).join('');
+  }
+  box.classList.add('show');
+}
+function onTopbarSearchKeydown(ev){
+  const box = document.getElementById('topbarSearchResults');
+  const items = box.querySelectorAll('.topbar-search-result');
+  if(ev.key==='ArrowDown'){
+    topbarSearchActiveIdx = Math.min(topbarSearchActiveIdx+1, items.length-1);
+    items.forEach((it,i)=>it.classList.toggle('active', i===topbarSearchActiveIdx));
+    ev.preventDefault();
+  } else if(ev.key==='ArrowUp'){
+    topbarSearchActiveIdx = Math.max(topbarSearchActiveIdx-1, 0);
+    items.forEach((it,i)=>it.classList.toggle('active', i===topbarSearchActiveIdx));
+    ev.preventDefault();
+  } else if(ev.key==='Enter'){
+    if(topbarSearchActiveIdx>=0 && topbarSearchLastResults[topbarSearchActiveIdx]){
+      goToStudentFromSearch(topbarSearchLastResults[topbarSearchActiveIdx].id);
+    } else if(topbarSearchLastResults.length===1){
+      goToStudentFromSearch(topbarSearchLastResults[0].id);
+    }
+    ev.preventDefault();
+  } else if(ev.key==='Escape'){
+    box.classList.remove('show');
+    ev.target.blur();
+  }
+}
+/* Salta directo a la ficha del estudiante en "Estudiantes": fija los
+   filtros a su centro/grado/sección y resalta su fila en la tabla, para
+   no obligar al docente a navegar centro → grado → sección manualmente. */
+function goToStudentFromSearch(studentId){
+  const s = students.find(x=>x.id===studentId);
+  if(!s) return;
+  studentFilters = { centro:s.centro||'', grado:s.grado||'', seccion:s.seccion||'' };
+  try{ localStorage.setItem('aulaDigital_studentFilters', JSON.stringify(studentFilters)); }catch(e){}
+  estudiantesSubTab = 'generales';
+  pendingHighlightStudentId = studentId;
+  document.getElementById('topbarSearchInput').value = '';
+  document.getElementById('topbarSearchResults').classList.remove('show');
+  goPage('estudiantes');
+}
+document.addEventListener('click', (ev)=>{
+  const wrap = document.getElementById('topbarSearchWrap');
+  if(wrap && !wrap.contains(ev.target)){ document.getElementById('topbarSearchResults')?.classList.remove('show'); }
+});
 const ESTUDIANTES_SECURITY_CODE = '1234';
 let bulkRows = [];
 
@@ -1577,7 +1687,30 @@ function closeTab(key, evt){
   renderAll();
 }
 
-function renderAll(){ renderSidebar(); renderTabbar(); renderAulaBanner(); renderContent(); syncTopbar(); const sn = document.getElementById('sidebarName'); if(sn) sn.textContent = perfilNombreCompleto(); }
+function renderAll(){ renderSidebar(); renderTabbar(); renderAulaBanner(); renderContent(); syncTopbar(); applyFontSize(); const sn = document.getElementById('sidebarName'); if(sn) sn.textContent = perfilNombreCompleto(); }
+/* ---- Tamaño de letra ajustable (accesibilidad) ---- */
+const FONT_SIZES = ['normal','font-md','font-lg'];
+const FONT_SIZE_LABELS = { 'normal':'Normal', 'font-md':'Grande', 'font-lg':'Muy grande' };
+function applyFontSize(){
+  const saved = localStorage.getItem('aulaDigital_fontSize') || 'normal';
+  const root = document.getElementById('appRoot');
+  if(!root) return;
+  FONT_SIZES.forEach(f=> root.classList.remove(f));
+  if(saved!=='normal') root.classList.add(saved);
+}
+function cycleFontSize(){
+  const current = localStorage.getItem('aulaDigital_fontSize') || 'normal';
+  const next = FONT_SIZES[(FONT_SIZES.indexOf(current)+1) % FONT_SIZES.length];
+  localStorage.setItem('aulaDigital_fontSize', next);
+  applyFontSize();
+  const badge = document.getElementById('saveBadge');
+  const badgeText = document.getElementById('saveBadgeText');
+  if(badge && badgeText){
+    badge.style.display='flex'; badge.className='auth-save-badge ok';
+    badgeText.textContent = `Tamaño de letra: ${FONT_SIZE_LABELS[next]}`;
+    setTimeout(()=>{ badge.style.display='none'; }, 1400);
+  }
+}
 
 /* La hamburguesa oculta/muestra el menú lateral, igual que en la app de
    referencia; "+ Nueva pestaña" abre el menú para elegir qué módulo agregar
@@ -1634,6 +1767,29 @@ function renderContent(){
   const el = document.getElementById('content');
   el.classList.toggle('content-wide', WIDE_CONTENT_PAGES.includes(currentPage));
   el.innerHTML = pageRenderers[currentPage]();
+  // "Pasar lista" se vuelve a dibujar completo en cada marca (P/T/A/E), así
+  // que restauramos el foco de teclado sobre la fila activa para que los
+  // atajos (1/2/3/4, ↑↓) sigan funcionando sin que el docente tenga que
+  // volver a hacer clic en la lista después de cada tecla.
+  const diaWrap = document.getElementById('diaListWrap');
+  if(diaWrap){
+    const rows = diaWrap.querySelectorAll('.dia-row');
+    if(rows.length){
+      diaFocusedRow = Math.min(diaFocusedRow, rows.length-1);
+      rows.forEach((r,i)=> r.classList.toggle('focused', i===diaFocusedRow));
+    }
+    diaWrap.focus({preventScroll:true});
+  }
+  // Si venimos del buscador global de estudiante, ubicamos y resaltamos
+  // su fila dentro de la tabla de "Estudiantes".
+  if(pendingHighlightStudentId!==null){
+    const row = document.querySelector(`tr[data-student-row="${pendingHighlightStudentId}"]`);
+    if(row){
+      row.scrollIntoView({ block:'center', behavior:'smooth' });
+      row.classList.add('student-row-highlight');
+    }
+    pendingHighlightStudentId = null;
+  }
 }
 
 /* helpers */
@@ -1679,6 +1835,7 @@ function attendancePercent(id){
    ========================================================= */
 function renderInicio(){
   const hasCourses = courses.length > 0;
+  const pendingAttendanceCourses = hasCourses ? visibleCourses().filter(c=>courseAttendancePendingToday(c)) : [];
   return `
     <div class="top-row" style="align-items:center;">
       <div>
@@ -1687,6 +1844,19 @@ function renderInicio(){
       </div>
       <button class="btn btn-secondary" onclick="showGuiaInicio()">Guía de inicio</button>
     </div>
+
+    ${pendingAttendanceCourses.length>0 ? `
+      <div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; border-color:#f3c9c6; background:#fff8f7;">
+        <div style="display:flex; gap:14px; align-items:flex-start;">
+          <div class="qa-icon" style="width:36px;height:36px;font-size:17px;flex-shrink:0; background:#fbe4e2; color:var(--red);">📋</div>
+          <div>
+            <div style="font-weight:700; font-size:13.5px; margin-bottom:2px;">Aún no has pasado lista hoy en ${pendingAttendanceCourses.length} aula${pendingAttendanceCourses.length>1?'s':''}</div>
+            <div style="font-size:12.5px; color:var(--muted);">${pendingAttendanceCourses.map(c=>c.name).join(' · ')}</div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" style="white-space:nowrap;" onclick="openCourseFromHome(${pendingAttendanceCourses[0].id},'asistencia')">Pasar lista</button>
+      </div>
+    ` : ''}
 
     ${!hasCourses ? `
       <div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:24px;">
@@ -1730,11 +1900,12 @@ function renderInicio(){
             const centro = c.school || '—';
             const courseStudents = students.filter(s=>s.centro===centro && s.grado===g.grado && s.seccion===g.seccion);
             const subs = courseSubjects(c);
+            const pendiente = courseAttendancePendingToday(c);
             return `
             <div class="school-tag">🏫 ${(c.school||'').toUpperCase()}</div>
             <div class="course-row">
               <div>
-                <div class="course-name">${c.name}</div>
+                <div class="course-name">${c.name} ${pendiente ? '<span style="font-size:10.5px; font-weight:700; color:var(--red); background:#fbe4e2; border-radius:10px; padding:2px 8px; margin-left:6px;">Falta pasar lista hoy</span>' : ''}</div>
                 <div class="course-links" style="margin-top:6px;">
                   <a onclick="openCourseFromHome(${c.id},'asistencia')">Pasar lista</a>
                   <a onclick="openCourseFromHome(${c.id},'calificaciones')">Calificaciones</a>
@@ -3248,7 +3419,7 @@ function renderDatosGenerales(list, groupLabel, editMode){
             <tbody>
               ${list.map((s,idx)=>{
                 const edad = calcAge(s.fechaNacimiento);
-                return `<tr>
+                return `<tr data-student-row="${s.id}">
                   <td>${s.listNum ?? (idx+1)}</td>
                   <td class="libro-name-cell">${editMode?`<input class="libro-input" value="${escapeHtml(s.apellidos||'')}" onchange="updateStudentField(${s.id},'apellidos',this.value)" />`:escapeHtml(s.apellidos||'—')}</td>
                   <td class="libro-name-cell">${editMode?`<input class="libro-input" value="${escapeHtml(s.nombres||'')}" onchange="updateStudentField(${s.id},'nombres',this.value)" />`:escapeHtml(s.nombres||'—')}</td>
@@ -3536,7 +3707,7 @@ function handleBulkExcelUpload(input){
   reader.onload = function(e){
     try{
       const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, {type:'array'});
+      const wb = XLSX.read(data, {type:'array', cellDates:true});
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
       const key = currentSectionKey();
@@ -3545,6 +3716,28 @@ function handleBulkExcelUpload(input){
         for(const n of names){
           for(const k of Object.keys(row)){
             if(k.trim().toUpperCase()===n) return String(row[k]).trim();
+          }
+        }
+        return '';
+      };
+      // La fecha de nacimiento necesita su propio parseo: Excel puede
+      // entregarla como objeto Date (con cellDates:true) o como texto en
+      // distintos formatos (dd/mm/aaaa, aaaa-mm-dd), y el input type="date"
+      // del formulario solo acepta el formato ISO "aaaa-mm-dd".
+      const getDateField = (row, ...names)=>{
+        for(const n of names){
+          for(const k of Object.keys(row)){
+            if(k.trim().toUpperCase()===n){
+              const v = row[k];
+              if(v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
+              const s = String(v).trim();
+              if(!s) return '';
+              let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+              if(m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+              m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+              if(m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+              return '';
+            }
           }
         }
         return '';
@@ -3558,7 +3751,7 @@ function handleBulkExcelUpload(input){
           apellidos:getField(row,'APELLIDOS'),
           cedula:getField(row,'FICHA','CÉDULA','CEDULA'),
           sexo,
-          fecha:'',
+          fecha:getDateField(row,'FECHA DE NAC.','FECHA DE NACIMIENTO','FECHA NACIMIENTO','FECHA'),
           telefono:getField(row,'TELÉFONO','TELEFONO')
         };
       }).filter(r=>r.nombres || r.apellidos);
@@ -3646,6 +3839,18 @@ function renderAsistencia(){
 function attendanceGroupKey(f, iso){
   return `${iso}__${f.centro}__${f.grado}__${f.seccion}`;
 }
+/* ---- ¿Ya se pasó lista hoy en esta aula? Se usa en el Inicio para
+   recordarle al docente las aulas donde todavía falta hacerlo, sin que
+   tenga que entrar a Asistencia a revisar una por una. Solo cuenta las
+   aulas que ya tienen estudiantes inscritos. ---- */
+function courseAttendancePendingToday(c){
+  const g = parseCourseName(c.name);
+  const centro = c.school || '—';
+  const hasStudents = students.some(s=>s.centro===centro && s.grado===g.grado && s.seccion===g.seccion);
+  if(!hasStudents) return false;
+  const key = attendanceGroupKey({centro, grado:g.grado, seccion:g.seccion}, todayISO());
+  return !attendanceSaved[key];
+}
 
 /* ---- Pasar lista por día: un formulario con un estudiante por renglón y
    4 botones de estado (P/T/A/E) grandes y claros, para reducir errores
@@ -3711,11 +3916,11 @@ function renderAsistenciaDia(groupStudents, groupLabel, f){
   const rows = groupStudents.map((s,idx)=>{
     const fullName = s.name || `${s.nombres||''} ${s.apellidos||''}`.trim();
     const st = rec[s.id] || '';
-    return `<div class="dia-row">
+    return `<div class="dia-row" data-dia-row="${idx}">
       <span class="dia-num">${s.listNum ?? (idx+1)}</span>
       <span class="dia-name">${escapeHtml(fullName)}</span>
       <div class="dia-pills">
-        ${['P','T','A','E'].map(op=>`<button class="dia-pill ${op} ${st===op?'active':''}" onclick="setDiaEstado(${s.id},'${iso}','${op}')">${op}</button>`).join('')}
+        ${['P','T','A','E'].map(op=>`<button class="dia-pill ${op} ${st===op?'active':''}" data-est-id="${s.id}" data-iso="${iso}" data-op="${op}" onclick="setDiaEstado(${s.id},'${iso}','${op}',${idx})">${op}</button>`).join('')}
       </div>
     </div>`;
   }).join('');
@@ -3727,11 +3932,12 @@ function renderAsistenciaDia(groupStudents, groupLabel, f){
       <span><span class="lg-box T">T</span>Tardanza</span>
       <span><span class="lg-box A">A</span>Ausente</span>
       <span><span class="lg-box E">E</span>Excusa</span>
-      <span style="color:var(--muted);">· Toca un botón por estudiante. ${fechaBonita}.</span>
+      <span style="color:var(--muted);">· Toca un botón, o usa el teclado (1=P, 2=T, 3=A, 4=E, ↑↓ para moverte) sobre la fila. ${fechaBonita}.</span>
     </div>
-    <div class="dia-list">${rows}</div>
+    <div class="dia-list" id="diaListWrap" tabindex="0" onkeydown="handleDiaListKeydown(event)">${rows}</div>
     <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
-      <button class="btn btn-secondary btn-sm" onclick="marcarTodosPresente('${iso}')">Marcar todos Presente</button>
+      <button class="btn btn-secondary btn-sm" onclick="marcarTodosEstado('${iso}','A')">Marcar todos Ausente</button>
+      <button class="btn btn-secondary btn-sm" onclick="marcarTodosEstado('${iso}','P')">Marcar todos Presente</button>
       <button class="btn btn-primary" onclick="saveAttendanceDia('${iso}')">Guardar asistencia del día</button>
     </div>
   `;
@@ -3739,20 +3945,54 @@ function renderAsistenciaDia(groupStudents, groupLabel, f){
 
 function setAttendanceDiaFecha(v){ attendanceDate = v; renderContent(); }
 
-function setDiaEstado(studentId, iso, estado){
+function setDiaEstado(studentId, iso, estado, rowIdx){
   if(!attendance[iso]) attendance[iso] = {};
   const current = attendance[iso][studentId] || '';
   attendance[iso][studentId] = current===estado ? '' : estado;
   if(attendance[iso][studentId]==='') delete attendance[iso][studentId];
+  if(typeof rowIdx === 'number') diaFocusedRow = rowIdx;
   renderContent();
 }
 
-function marcarTodosPresente(iso){
+function marcarTodosEstado(iso, estado){
   const f = studentFilters;
   const groupStudents = students.filter(s=>s.centro===f.centro && s.grado===f.grado && s.seccion===f.seccion);
   if(!attendance[iso]) attendance[iso] = {};
-  groupStudents.forEach(s=>{ attendance[iso][s.id] = 'P'; });
+  groupStudents.forEach(s=>{ attendance[iso][s.id] = estado; });
   renderContent();
+}
+/* Estado de la fila con foco de teclado dentro de "Pasar lista", para que
+   1/2/3/4 marquen esa fila y ↑/↓ (o Enter) muevan el foco a la siguiente,
+   permitiendo pasar lista rápido sin usar el mouse. */
+let diaFocusedRow = 0;
+function handleDiaListKeydown(ev){
+  const wrap = document.getElementById('diaListWrap');
+  if(!wrap) return;
+  const rows = wrap.querySelectorAll('.dia-row');
+  if(rows.length===0) return;
+  const map = { '1':'P', '2':'T', '3':'A', '4':'E' };
+  if(map[ev.key]){
+    const row = rows[diaFocusedRow];
+    if(row){
+      const btn = row.querySelector(`.dia-pill[data-op="${map[ev.key]}"]`);
+      if(btn) btn.click();
+    }
+    ev.preventDefault();
+    return;
+  }
+  if(ev.key==='ArrowDown' || ev.key==='Enter'){
+    diaFocusedRow = Math.min(diaFocusedRow+1, rows.length-1);
+    highlightDiaRow(rows);
+    ev.preventDefault();
+  } else if(ev.key==='ArrowUp'){
+    diaFocusedRow = Math.max(diaFocusedRow-1, 0);
+    highlightDiaRow(rows);
+    ev.preventDefault();
+  }
+}
+function highlightDiaRow(rows){
+  rows.forEach((r,i)=> r.classList.toggle('focused', i===diaFocusedRow));
+  rows[diaFocusedRow]?.scrollIntoView({ block:'nearest' });
 }
 
 /* Guarda (cierra) la asistencia del día: exige que todos los estudiantes
@@ -7515,22 +7755,43 @@ async function saveRemoteState(){
   if(!authToken || saveInFlight) return;
   saveInFlight = true;
   const badge = document.getElementById('saveBadge');
-  badge.style.display = 'block'; badge.textContent = 'Guardando…';
+  const badgeText = document.getElementById('saveBadgeText');
+  badge.style.display = 'flex'; badge.className = 'auth-save-badge saving'; badgeText.textContent = 'Guardando…';
   try{
+    if(!navigator.onLine) throw new Error('offline');
     const res = await fetch(AUTH_API+'/data', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+authToken },
       body: JSON.stringify({ state: collectState() })
     });
     if(res.status===401){ logout(); return; }
-    badge.textContent = 'Guardado ✓';
+    if(!res.ok) throw new Error('http-error');
+    badge.className = 'auth-save-badge ok'; badgeText.textContent = 'Guardado ✓';
+    setTimeout(()=>{ if(badge.className==='auth-save-badge ok') badge.style.display='none'; }, 1500);
   }catch(e){
-    badge.textContent = 'Sin conexión, no se pudo guardar';
+    // No ocultamos el error: mientras no se recupere la conexión, el
+    // docente debe ver claramente que sus cambios no se han guardado.
+    badge.className = 'auth-save-badge error'; badgeText.textContent = '⚠ Sin conexión, no se pudo guardar. Reintentando…';
   }finally{
     saveInFlight = false;
-    setTimeout(()=>{ badge.style.display='none'; }, 1500);
   }
 }
+/* Si el navegador recupera la conexión, reintenta guardar automáticamente
+   en vez de esperar a que el docente vuelva a tocar algo. */
+window.addEventListener('online', ()=>{ if(authToken) scheduleSave(); });
+window.addEventListener('offline', ()=>{
+  const badge = document.getElementById('saveBadge');
+  const badgeText = document.getElementById('saveBadgeText');
+  if(!authToken) return;
+  badge.style.display = 'flex'; badge.className = 'auth-save-badge error'; badgeText.textContent = '⚠ Sin conexión a internet. Tus cambios se guardarán al reconectar.';
+});
+/* Reintento periódico mientras el guardado esté en estado de error, por si
+   la conexión se recupera sin que el navegador dispare el evento "online"
+   (p.ej. wifi con internet caído pero conectado). */
+setInterval(()=>{
+  const badge = document.getElementById('saveBadge');
+  if(authToken && badge && badge.classList.contains('error') && !saveInFlight){ saveRemoteState(); }
+}, 15000);
 /* Envuelve renderContent para autoguardar cada vez que cambia algo,
    sin tener que tocar cada función que modifica datos. */
 const _renderContentOriginal = renderContent;
