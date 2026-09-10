@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="es">
 <head>
@@ -670,10 +671,29 @@
   .informe-legend-rango{ font-weight:700; white-space:nowrap; background:#dcebf8; text-align:center; }
   .informe-legend-desc{ color:var(--text); }
   @media print{
-    .informe-sheet{ border:none; max-width:none; padding:0; font-size:10.5px; }
-    .informe-textarea{ background:transparent; }
+    /* Página propia del boletín: horizontal, con margen bien definido,
+       independiente del @page que usa la pantalla de Horario. */
+    @page informe-print{ size: landscape; margin: 0.6in; }
+    .informe-sheet{ page: informe-print; border:none; max-width:none; padding:0; font-size:10.5px; }
+    .informe-textarea{ background:transparent; min-height:110px; }
     .informe-obs-textarea{ resize:none; }
-    .informe-obs-box{ background:transparent; }
+    .informe-obs-box{ background:transparent; min-height:48px; padding:5px 8px 5px 30px; }
+    /* Hoja 1: la portada (firma + datos del estudiante). Termina siempre
+       en un salto de página para que la hoja 2 empiece limpia. */
+    .informe-top{ page-break-after:always; break-after:page; page-break-inside:avoid; break-inside:avoid; }
+    .informe-left, .informe-right{ page-break-inside:avoid; break-inside:avoid; }
+    /* Hoja 2: tabla de desempeño + observaciones + asistencia/leyenda.
+       Se evita que cada bloque se corte a la mitad entre una hoja y otra. */
+    .informe-table-scroll, .informe-obs-wrap, .informe-bottom,
+    .informe-firma-table, .informe-att-table, .informe-legend-table{ page-break-inside:avoid; break-inside:avoid; }
+    .informe-comp-table tr, .informe-att-table tr, .informe-legend-table tr{ page-break-inside:avoid; break-inside:avoid; }
+    /* Espaciados más compactos en impresión para que la hoja 2 quepa completa
+       sin desbordarse a una tercera página. */
+    .informe-table-title, .informe-obs-title{ margin-top:8px; padding:5px; }
+    .informe-bottom{ margin-top:8px; }
+    .informe-comp-table th, .informe-comp-table td{ padding:3px 5px; }
+    .informe-att-table th, .informe-att-table td{ padding:4px; }
+    .informe-legend-table td{ padding:4px 6px; }
   }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
